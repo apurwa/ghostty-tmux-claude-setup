@@ -1,0 +1,9 @@
+# Send ESC+Enter on Shift+Enter so Claude Code (and other TUIs) insert a
+# newline instead of submitting. Passes through tmux unchanged.
+keybind = shift+enter=text:\x1b\r
+
+# gruvbox light — https://github.com/morhetz/gruvbox
+# bg #fbf1c7, fg #3c3836. The status line palette in
+# ~/.claude/statusline-command.sh is tuned against this background; if you
+# switch back to a dark theme, those colours need to change with it.
+theme = Gruvbox Light
