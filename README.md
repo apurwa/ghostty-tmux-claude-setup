@@ -43,6 +43,10 @@ The installer is idempotent and backs up anything it replaces to
   submitting — sends `ESC`+`Enter`, which passes cleanly through tmux.
 - **Gruvbox Light** theme (background `#fbf1c7`).
 
+**Claude Code**
+- Theme set to `light` so its own UI text stays legible on the cream
+  background (the default dark theme's dimmed text is light-grey and washes out).
+
 **tmux**
 - **Right-click any pane → Split / New Window / Zoom / Kill menu**, even inside
   a mouse-capturing app like Claude Code (see the note under *Design decisions*).
@@ -65,8 +69,8 @@ claude/glyph-test.sh            → ~/.claude/glyph-test.sh   (icon/width tester
 claude/settings.snippet.json    → merged into ~/.claude/settings.json
 ```
 
-The installer never overwrites `settings.json` — it merges just the `statusLine`
-key with `jq`, so your existing permissions, model, and other settings survive.
+The installer never overwrites `settings.json` — it merges only the `theme` and `statusLine`
+keys with `jq`, so your existing permissions, model, and other settings survive.
 
 ---
 
