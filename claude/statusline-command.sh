@@ -191,6 +191,11 @@ session_cost() {
   printf '%s' "$cost"
 }
 
+# Each row is appended to this array and emitted at the end with a blank line
+# between rows (see "Emit"). Collecting first keeps the spacing correct no
+# matter which rows are present — a skipped row never leaves a double gap.
+rows=()
+
 # ── Line 1: ◆ full-working-directory-path › ◇ worktree ────────────────────────
 # The full absolute path of the current directory, with ~ standing in for $HOME.
 cwd_disp="${current_dir:-$project_dir}"
@@ -202,7 +207,7 @@ if [ -n "$cwd_disp" ] || [ -n "$wt_name" ]; then
   line1=""
   [ -n "$cwd_disp" ] && line1="${MAROON}${ICON_PROJECT} ${cwd_disp}${R}"
   [ -n "$wt_name" ] && line1+="${SEP}${MAROON_DK}◇ ${wt_name}${R}"
-  printf '%s\n' "$line1"
+  rows+=("$line1")
 fi
 
 # ── Line 2:  username › repo › branch › PR ───────────────────────────────────
@@ -260,7 +265,7 @@ if [ -n "$branch" ] || [ -n "$repo_name" ]; then
     line2+="${SEP}${pr_col}PR #${pr_num}${R}"
     [ -n "$pr_state" ] && line2+="${D} ${pr_state}${R}"
   fi
-  printf '%s\n' "$line2"
+  rows+=("$line2")
 fi
 
 # ── Line 3: ▪ limits (plain %) › context (bar) ────────────────────────────────
@@ -283,7 +288,7 @@ if [ -n "$ctx_pct" ]; then
   c=$(heat "$ctx_pct")
   line3+="$(bar "$ctx_pct") ${c}$(printf '%.0f' "$ctx_pct")%${R}"
 fi
-[ -n "$line3" ] && printf '%s\n' "${MAROON_DK}${ICON_LIMITS} ${R}${line3}"
+[ -n "$line3" ] && rows+=("${MAROON_DK}${ICON_LIMITS} ${R}${line3}")
 
 # ── Line 4: ▫ model › effort › thinking › cost ────────────────────────────────
 cost=$(session_cost "$transcript" "$session_id")
@@ -294,5 +299,14 @@ if [ -n "$model" ] || [ -n "$effort" ] || [ -n "$cost" ]; then
   [ -n "$style" ] && [ "$style" != "default" ] && line4+="${SEP}${GREY}${style}${R}"
   # "~" because this is derived from transcript usage, not billed figures.
   [ -n "$cost" ] && line4+="${SEP}${BLUE}~\$${cost}${R}"
-  printf '%s\n' "$line4"
+  rows+=("$line4")
 fi
+
+# ── Emit: rows separated by a blank line for extra vertical spacing ────────────
+# A blank line between each populated row (no leading/trailing blank). If Claude
+# Code collapses the empty lines, change the spacer printf '\n' to printf ' \n'
+# (a single space) so the row is non-empty and always renders.
+for i in "${!rows[@]}"; do
+  [ "$i" -gt 0 ] && printf '\n'
+  printf '%s\n' "${rows[$i]}"
+done
