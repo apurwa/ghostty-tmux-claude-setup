@@ -1,8 +1,8 @@
 #!/bin/bash
 # Claude Code status line, themed for gruvbox light (morhetz/gruvbox).
 #
-#    project › subdir › ◇ worktree
-#   ● owner/repo › branch* ↑n↓n › PR #n
+#    ~/full/path/to/cwd › ◇ worktree
+#    owner/repo › branch* ↑n↓n › PR #n
 #    5h 43% (2h10m) › 7d 86% (3d5h) › ██░░░░░░ 31%
 #    model › effort › thinking › ~$1.23
 #
@@ -17,7 +17,7 @@
 # the maroon ANSI colour and stay one column wide. Emoji cannot do either: the
 # system colour-emoji font ignores ANSI colour and renders two columns wide.
 #
-# The remaining glyphs (◇ ● ○ █ ░) are single-width, from Geometric Shapes and
+# The remaining glyphs (◇ █ ░) are single-width, from Geometric Shapes and
 # Block Elements, which monospace fonts cover reliably. Avoid symbols like
 # ⟳ (U+27F3) and ⑂ (U+2442): the font lacks them, the terminal substitutes a
 # wider glyph, and following text overlaps. Use glyph-test.sh to check a new one.
@@ -93,6 +93,7 @@ BAR_W=8
 # them literally silently leaves behind an empty string. The escapes are plain
 # ASCII in the file and expand to the right bytes at runtime.
 ICON_PROJECT=$(printf '\357\201\273')   # U+F07B  nf-fa-folder
+ICON_REPO=$(printf '\357\202\233')      # U+F09B  nf-fa-github (the cat logo)
 ICON_LIMITS=$(printf '\357\200\227')    # U+F017  nf-fa-clock-o
 ICON_SESSION=$(printf '\357\213\233')   # U+F2DB  nf-fa-microchip
 
@@ -177,29 +178,28 @@ session_cost() {
   printf '%s' "$cost"
 }
 
-# ── Line 1: ◆ project › subdir › ◇ worktree ───────────────────────────────────
-proj=$(basename "${project_dir:-$current_dir}" 2>/dev/null)
-if [ -n "$proj" ] || [ -n "$wt_name" ]; then
+# ── Line 1: ◆ full-working-directory-path › ◇ worktree ────────────────────────
+# The full absolute path of the current directory, with ~ standing in for $HOME.
+cwd_disp="${current_dir:-$project_dir}"
+case "$cwd_disp" in
+  "$HOME")   cwd_disp="~" ;;
+  "$HOME"/*) cwd_disp="~${cwd_disp#"$HOME"}" ;;
+esac
+if [ -n "$cwd_disp" ] || [ -n "$wt_name" ]; then
   line1=""
-  [ -n "$proj" ] && line1="${MAROON}${ICON_PROJECT} ${proj}${R}"
-  # Only show a path segment when actually nested below the project root.
-  if [ -n "$project_dir" ] && [ "$current_dir" != "$project_dir" ]; then
-    case "$current_dir" in
-      "$project_dir"/*) line1+="${SEP}${MAROON_LT}${current_dir#"$project_dir"/}${R}" ;;
-    esac
-  fi
+  [ -n "$cwd_disp" ] && line1="${MAROON}${ICON_PROJECT} ${cwd_disp}${R}"
   [ -n "$wt_name" ] && line1+="${SEP}${MAROON_DK}◇ ${wt_name}${R}"
   printf '%s\n' "$line1"
 fi
 
-# ── Line 2: ● repo › branch › PR ──────────────────────────────────────────────
+# ── Line 2:  repo › branch › PR ──────────────────────────────────────────────
 branch="$wt_branch"
 [ -z "$branch" ] && branch=$(git -C "$current_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
 
 if [ -n "$branch" ] || [ -n "$repo_name" ]; then
   line2=""
   if [ -n "$repo_name" ]; then
-    line2="${MAROON}● ${R}${GREY}${repo_owner}/${R}${MAROON}${repo_name}${R}"
+    line2="${MAROON}${ICON_REPO} ${R}${GREY}${repo_owner}/${R}${MAROON}${repo_name}${R}"
   fi
   if [ -n "$branch" ]; then
     dirty=""
@@ -211,8 +211,8 @@ if [ -n "$branch" ] || [ -n "$repo_name" ]; then
       [ "$ahead"  -gt 0 ] 2>/dev/null && track+=" ${GREEN}↑${ahead}${R}"
       [ "$behind" -gt 0 ] 2>/dev/null && track+=" ${RED}↓${behind}${R}"
     fi
-    # Lead with ○ only when there is no repo segment already carrying a glyph.
-    if [ -n "$line2" ]; then line2+="$SEP"; else line2="${MAROON}○ ${R}"; fi
+    # Lead with the GitHub icon only when no repo segment already carries it.
+    if [ -n "$line2" ]; then line2+="$SEP"; else line2="${MAROON}${ICON_REPO} ${R}"; fi
     line2+="${MAROON_LT}${branch}${R}${dirty}${track}"
   fi
   if [ -n "$pr_num" ]; then
