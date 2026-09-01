@@ -34,7 +34,7 @@ The installer is idempotent and backs up anything it replaces to
 |  | Line | Shows |
 |---|---|---|
 |  | project | full working-directory path (~ for home) › `◇` worktree |
-|  | repo | `owner/repo` › branch (`*` dirty, `↑n↓n` vs upstream) › PR + review state |
+|  | repo | `owner/repo` › branch (`*` dirty, `↑n↓n` vs upstream, `Δn` commits vs default branch) › PR # + review state |
 |  | usage | 5-hour and 7-day limits with reset countdowns; context-window bar + % |
 |  | session | model › effort › thinking › estimated session cost |
 

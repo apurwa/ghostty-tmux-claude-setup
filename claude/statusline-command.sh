@@ -119,6 +119,19 @@ bar() {
   printf '%s%s%s%s%s' "$(heat "$p")" "$full" "$BAR_EMPTY" "$empty" "$R"
 }
 
+# The default branch's ref, for "commits on this branch vs the default branch".
+# origin/HEAD is the correct source but isn't always set locally (e.g. after a
+# plain `gh repo create --push`), so fall back through the usual names. Prints
+# nothing when none resolve, which makes the caller omit the indicator.
+default_base() {
+  local dir=$1 b c
+  b=$(git -C "$dir" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null) \
+    && { printf '%s' "$b"; return; }
+  for c in origin/main origin/master main master; do
+    git -C "$dir" rev-parse --verify --quiet "$c" >/dev/null 2>&1 && { printf '%s' "$c"; return; }
+  done
+}
+
 # Unix epoch -> compact "2h14m" / "3d4h" countdown.
 countdown() {
   local d=$(( $1 - $(date +%s) ))
@@ -204,12 +217,19 @@ if [ -n "$branch" ] || [ -n "$repo_name" ]; then
   if [ -n "$branch" ]; then
     dirty=""
     [ -n "$(git -C "$current_dir" status --porcelain 2>/dev/null | head -1)" ] && dirty="${YELLOW}*${R}"
-    # Ahead/behind the upstream, when one is configured.
+    # Ahead/behind the upstream (the remote tracking branch), when configured.
     track=""
     if ab=$(git -C "$current_dir" rev-list --left-right --count '@{upstream}...HEAD' 2>/dev/null); then
       behind=${ab%%	*}; ahead=${ab##*	}
       [ "$ahead"  -gt 0 ] 2>/dev/null && track+=" ${GREEN}↑${ahead}${R}"
       [ "$behind" -gt 0 ] 2>/dev/null && track+=" ${RED}↓${behind}${R}"
+    fi
+    # Δn: commits on this branch not in the DEFAULT branch — the size of the
+    # branch's changes, distinct from ↑↓ above (which is vs the upstream). Zero
+    # (e.g. when sitting on the default branch itself) is omitted.
+    base=$(default_base "$current_dir")
+    if [ -n "$base" ] && vs=$(git -C "$current_dir" rev-list --count "$base..HEAD" 2>/dev/null); then
+      [ "${vs:-0}" -gt 0 ] 2>/dev/null && track+=" ${MAROON}Δ${vs}${R}"
     fi
     # Lead with the GitHub icon only when no repo segment already carries it.
     if [ -n "$line2" ]; then line2+="$SEP"; else line2="${MAROON}${ICON_REPO} ${R}"; fi
