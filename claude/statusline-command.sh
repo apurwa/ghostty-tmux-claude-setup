@@ -2,7 +2,7 @@
 # Claude Code status line, themed for gruvbox light (morhetz/gruvbox).
 #
 #    ~/full/path/to/cwd › ◇ worktree
-#    owner/repo › branch* ↑n↓n › PR #n
+#    username › repo › branch* ↑n↓n Δn › PR #n
 #    5h 43% (2h10m) › 7d 86% (3d5h) › ██░░░░░░ 31%
 #    model › effort › thinking › ~$1.23
 #
@@ -205,14 +205,29 @@ if [ -n "$cwd_disp" ] || [ -n "$wt_name" ]; then
   printf '%s\n' "$line1"
 fi
 
-# ── Line 2:  repo › branch › PR ──────────────────────────────────────────────
+# ── Line 2:  username › repo › branch › PR ───────────────────────────────────
 branch="$wt_branch"
 [ -z "$branch" ] && branch=$(git -C "$current_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+# The payload's .workspace.repo is only present sometimes; when it is missing,
+# parse owner (username) and repo name out of the origin remote so the GitHub
+# identity always shows. Handles both git@host:owner/name.git and
+# https://host/owner/name.git — strip .git, take the last two path components.
+if [ -z "$repo_name" ]; then
+  ru=$(git -C "$current_dir" remote get-url origin 2>/dev/null)
+  if [ -n "$ru" ]; then
+    ru=${ru%.git}; rn=${ru##*/}; rr=${ru%/*}; ro=${rr##*[:/]}
+    [ -n "$rn" ] && [ -n "$ro" ] && [ "$rn" != "$ro" ] && { repo_name=$rn; repo_owner=$ro; }
+  fi
+fi
 
 if [ -n "$branch" ] || [ -n "$repo_name" ]; then
   line2=""
   if [ -n "$repo_name" ]; then
-    line2="${MAROON}${ICON_REPO} ${R}${GREY}${repo_owner}/${R}${MAROON}${repo_name}${R}"
+    # username › repo, as two separate segments (not owner/repo).
+    line2="${MAROON}${ICON_REPO} ${R}"
+    [ -n "$repo_owner" ] && line2+="${GREY}${repo_owner}${R}${SEP}"
+    line2+="${MAROON}${repo_name}${R}"
   fi
   if [ -n "$branch" ]; then
     dirty=""

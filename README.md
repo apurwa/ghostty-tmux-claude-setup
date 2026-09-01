@@ -26,7 +26,7 @@ The installer is idempotent and backs up anything it replaces to
 
 ```
  ~/Projects/slrepo/src › ◇ fix-auth
- apurwa/ai-job-search › feature/auth* › PR #128 changes_requested
+ apurwa › ai-job-search › feature/auth* › PR #128 changes_requested
  5h 43% (1h49m) › 7d 86% (3d5h) › ██░░░░░░ 31%
  Opus 5 › high › thinking › ~$35.11
 ```
@@ -34,7 +34,7 @@ The installer is idempotent and backs up anything it replaces to
 |  | Line | Shows |
 |---|---|---|
 |  | project | full working-directory path (~ for home) › `◇` worktree |
-|  | repo | `owner/repo` › branch (`*` dirty, `↑n↓n` vs upstream, `Δn` commits vs default branch) › PR # + review state |
+|  | repo | `username` › `repo` › branch (`*` dirty, `↑n↓n` vs upstream, `Δn` vs default) › PR # + review state |
 |  | usage | 5-hour and 7-day limits with reset countdowns; context-window bar + % |
 |  | session | model › effort › thinking › estimated session cost |
 
