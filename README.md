@@ -22,20 +22,26 @@ The installer is idempotent and backs up anything it replaces to
 
 ## What you get
 
-**Status line** — four lines, all bold maroon, single icon per line:
+**Status line** — four lines in bold maroon, with amber/red heat that shows only
+when a metric runs hot:
 
 ```
  ~/Projects/slrepo/src › ◇ fix-auth
- apurwa › ai-job-search › feature/auth* › PR #128 changes_requested
- 5h 43% (1h49m) › 7d 86% (3d5h) › ██░░░░░░ 31%
+ apurwa › ai-job-search › feature/auth* ↑2 Δ4 › PR #128 changes_requested
+ 5h 43% (1h49m) ↓ › 7d 86% (3d5h) ↑ cap ~4h › ██░░░░░░ 31%
  Opus 5 › high › thinking › ~$35.11
 ```
+
+(A pull-request icon and count sit after the repo name when you have open PRs; the
+`↓ → ↑` after a limit is the burn-rate pace, with `cap ~Xh` — the ETA to 100% —
+shown when over pace. Leading per-line icons are omitted here as they need a
+Nerd Font to render.)
 
 |  | Line | Shows |
 |---|---|---|
 |  | project | full working-directory path (~ for home) › `◇` worktree |
-|  | repo | `username` › `repo` › branch (`*` dirty, `↑n↓n` vs upstream, `Δn` vs default) › PR # + review state |
-|  | usage | 5-hour and 7-day limits with reset countdowns; context-window bar + % |
+|  | repo | `username` › `repo` (+ pull-request icon & your open-PR count) › branch (`*` dirty, `↑n↓n` vs upstream, `Δn` vs default) › PR # + review state |
+|  | usage | 5-hour and 7-day limits with reset countdowns and burn-rate pace (`↓`/`→`/`↑ cap ~Xh`); context-window bar + %. Amber at ≥60%, red at ≥80% |
 |  | session | model › effort › thinking › estimated session cost |
 
 **Ghostty**
@@ -81,8 +87,10 @@ keys with `jq`, so your existing permissions, model, and other settings survive.
 - `jq` and a **Symbols-only Nerd Font** — the installer adds both:
   `brew install jq` and `brew install --cask font-symbols-only-nerd-font`.
 
-The status line reads Claude Code's own usage data, so no API key or network
-call is involved. Session cost is estimated from the transcript — see below.
+The status line reads Claude Code's own usage data — no API key needed. The only
+network touch is the optional open-PR count, which shells out to `gh` (cached,
+refreshed in the background, and silently skipped if `gh` is missing or offline).
+Session cost is estimated from the transcript — see below.
 
 ---
 

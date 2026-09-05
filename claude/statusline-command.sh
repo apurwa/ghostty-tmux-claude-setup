@@ -3,8 +3,11 @@
 #
 #    ~/full/path/to/cwd › ◇ worktree
 #    username › repo › branch* ↑n↓n Δn › PR #n
-#    5h 43% (2h10m) › 7d 86% (3d5h) › ██░░░░░░ 31%
+#    5h 43% (2h10m) ↓ › 7d 86% (3d5h) ↑ cap ~4h › ██░░░░░░ 31%
 #    model › effort › thinking › ~$1.23
+#
+# The ↓ → ↑ after a limit is the burn-rate pace: ↓ under pace, → on pace,
+# ↑ over pace with "cap ~<Xh>" — the ETA to 100% if the current rate holds.
 #
 # Field names come from the payload schema documented inside the Claude Code
 # binary (v2.1.236). Note there is no daily or monthly limit in the payload —
@@ -50,15 +53,15 @@ eval "$(printf '%s' "$input" | jq -r '
   @sh "transcript=\(.transcript_path // "")"
 ' 2>/dev/null)"
 
-# ── flat maroon palette on the gruvbox light background (#fbf1c7) ─────────────
-# Every piece of text is #9d0006 — gruvbox's faded red. The names below are kept
-# so the rest of the script needs no changes; they all now point at one colour.
-#
-# Consequence worth knowing: the heat signal is gone from the text. 5h/7d/ctx
-# percentages no longer change colour as they climb, so the numbers themselves
-# are the only warning. The progress bar still shows load by how full it is.
-# To bring heat back, give GREEN/YELLOW/RED distinct values again — they are
-# already wired to the <50 / <80 / >=80 thresholds in heat().
+# ── maroon palette on the gruvbox light background (#fbf1c7), alarm-only heat ──
+# Every glyph is #9d0006 — gruvbox's faded red — EXCEPT the heat colours (HEAT_*
+# below), used ONLY by the 5h/7d/ctx percentages, the bar fill, and the over-pace
+# ↑. Everything else — the dirty *, the ↑↓ track, PR states — stays maroon, so
+# the line reads calm almost always and only lights up when a metric runs hot:
+#   <60%  calm  → HEAT_CALM  = the same maroon (no visible change)
+#   60-79 warn  → HEAT_WARN  = gruvbox amber  #b57614
+#   >=80  alarm → HEAT_ALARM = gruvbox bright red #cc241d
+# To go fully flat again, point the HEAT_* colours back at $TEXT.
 #
 # Careful with the comments below: `VAR=$'...'# text` with no space folds the
 # '#' into the value and prints a stray '#' in the status line.
@@ -71,9 +74,15 @@ GREY="$TEXT"                     # labels: 5h / 7d / ctx / model
 MAROON="$TEXT"                   # primary identity
 MAROON_LT="$TEXT"                # secondary — subdir, branch
 MAROON_DK="$TEXT"                # bullets, worktree
-GREEN="$TEXT"                    # heat: low
-YELLOW="$TEXT"                   # heat: mid
-RED="$TEXT"                      # heat: high
+GREEN="$TEXT"                    # ahead ↑, PR approved — kept maroon (flat)
+YELLOW="$TEXT"                   # dirty *, PR pending — kept maroon (flat)
+RED="$TEXT"                      # behind ↓, PR changes-requested — kept maroon (flat)
+# Heat has its own colours so ONLY the climbing metrics (5h/7d/ctx % and the bar)
+# and the over-pace ↑ ever leave maroon; the dirty *, ↑↓ track and PR states
+# above stay calm. calm <60 / warn 60-79 / alarm >=80.
+HEAT_CALM="$TEXT"                       # <60% — same maroon, no visible change
+HEAT_WARN=$'\033[1;38;2;181;118;20m'   # 60-79% — gruvbox amber #b57614
+HEAT_ALARM=$'\033[1;38;2;204;36;29m'   # >=80% — gruvbox bright red #cc241d
 BLUE="$TEXT"                     # cost
 # Not text — the empty track of the bar. Kept as a light tint of the same hue so
 # the bar still reads as a bar; at #9d0006 it would be a solid indistinct block.
@@ -96,11 +105,12 @@ ICON_PROJECT=$(printf '\357\201\273')   # U+F07B  nf-fa-folder
 ICON_REPO=$(printf '\357\202\233')      # U+F09B  nf-fa-github (the cat logo)
 ICON_LIMITS=$(printf '\357\200\227')    # U+F017  nf-fa-clock-o
 ICON_SESSION=$(printf '\357\213\233')   # U+F2DB  nf-fa-microchip
+ICON_PR=$(printf '\357\220\207')        # U+F407  nf-oct-git-pull-request
 
 # Heat on the maroon ramp: light under 50%, mid under 80%, deepest above.
-heat() { local p=${1%%.*}; if [ "${p:-0}" -lt 50 ]; then printf '%s' "$GREEN"
-       elif [ "${p:-0}" -lt 80 ]; then printf '%s' "$YELLOW"
-       else printf '%s' "$RED"; fi; }
+heat() { local p=${1%%.*}; if [ "${p:-0}" -lt 60 ]; then printf '%s' "$HEAT_CALM"
+       elif [ "${p:-0}" -lt 80 ]; then printf '%s' "$HEAT_WARN"
+       else printf '%s' "$HEAT_ALARM"; fi; }
 
 # Percentage -> "███░░░░░". Filled cells round to nearest, and a non-zero
 # percentage always shows at least one cell so "in use" never reads as empty.
@@ -139,6 +149,62 @@ countdown() {
   if   [ "$d" -ge 86400 ]; then printf '%dd%dh' $((d/86400)) $(((d%86400)/3600))
   elif [ "$d" -ge 3600 ];  then printf '%dh%dm' $((d/3600))  $(((d%3600)/60))
   else printf '%dm' $((d/60)); fi
+}
+
+# Burn-rate pace for a rolling window. Projects the current spend rate to the
+# window's end and warns when you're on track to hit the cap before it resets:
+# ↓ under pace, → on pace, ↑ over pace with "cap ~<Xh>" (the ETA to 100%). It
+# stays silent until enough of the window has elapsed for the projection to mean
+# anything — an early burst shouldn't scream. Args: used%, resets_at epoch,
+# window length in seconds (5h=18000, 7d=604800).
+pace() {
+  local used=$1 reset=$2 window=$3 u now elapsed projected eta
+  case "$reset" in ''|*[!0-9]*) return ;; esac
+  u=${used%%.*}
+  case "$u" in ''|*[!0-9]*) return ;; esac
+  [ "$u" -le 0 ] && return                          # nothing spent yet
+  now=$(date +%s)
+  elapsed=$(( now - (reset - window) ))
+  [ "$elapsed" -le 0 ] && return                    # window not started / clock skew
+  [ $(( reset - now )) -le 0 ] && return            # already reset
+  [ "$elapsed" -lt $(( window / 10 )) ] && return   # too early to extrapolate
+  projected=$(( u * window / elapsed ))             # final % if the rate holds
+  if [ "$projected" -ge 110 ]; then
+    eta=$(( elapsed * (100 - u) / u ))              # seconds until 100%
+    printf ' %s↑ cap ~%s%s' "$HEAT_ALARM" "$(countdown $(( now + eta )))" "$R"
+  elif [ "$projected" -ge 90 ]; then
+    printf ' %s→%s' "$D" "$R"
+  else
+    printf ' %s↓%s' "$BAR_EMPTY" "$R"
+  fi
+}
+
+# Count of your own open PRs in this repo, via gh. gh hits the network and the
+# status line re-renders often, so this NEVER blocks on it: it prints whatever
+# the cache holds and, when that is stale (>60s) or missing, refreshes it in a
+# background subshell whose result the next render picks up. A cold cache shows
+# nothing for one render. Prints nothing when gh is absent/unauthed, there is no
+# origin remote, or the count is zero — so the caller simply omits the segment.
+pr_open() {
+  local dir=$1 remote key cache now age n
+  command -v gh >/dev/null 2>&1 || return
+  remote=$(git -C "$dir" remote get-url origin 2>/dev/null)
+  [ -n "$remote" ] || return
+  key=$(printf '%s' "$remote" | md5 -q 2>/dev/null \
+        || printf '%s' "$remote" | md5sum 2>/dev/null | awk '{print $1}')
+  cache="$HOME/.claude/cache/statusline/pr-${key:-x}"
+  mkdir -p "$(dirname "$cache")" 2>/dev/null || return
+  now=$(date +%s); age=99999
+  [ -f "$cache" ] && age=$(( now - $(stat -f%m "$cache" 2>/dev/null || echo 0) ))
+  if [ "$age" -ge 60 ]; then
+    ( cd "$dir" 2>/dev/null && gh pr list --author @me --state open \
+        --json number --jq 'length' 2>/dev/null > "$cache.tmp" \
+        && mv "$cache.tmp" "$cache" ) &
+  fi
+  n=$(cat "$cache" 2>/dev/null)
+  case "$n" in ''|*[!0-9]*) return ;; esac
+  [ "$n" -gt 0 ] || return
+  printf '%s' "$n"
 }
 
 # Session cost. Claude Code does not put cost in the status line payload, so it
@@ -233,6 +299,9 @@ if [ -n "$branch" ] || [ -n "$repo_name" ]; then
     line2="${MAROON}${ICON_REPO} ${R}"
     [ -n "$repo_owner" ] && line2+="${GREY}${repo_owner}${R}${SEP}"
     line2+="${MAROON}${repo_name}${R}"
+    # Your open PRs in this repo, appended to the repo identity as "⑂ n".
+    pr_n=$(pr_open "$current_dir")
+    [ -n "$pr_n" ] && line2+=" ${MAROON}${ICON_PR} ${pr_n}${R}"
   fi
   if [ -n "$branch" ]; then
     dirty=""
@@ -274,12 +343,12 @@ fi
 line3=""
 if [ -n "$five_pct" ]; then
   line3+="${GREY}5h ${R}$(heat "$five_pct")$(printf '%.0f' "$five_pct")%${R}"
-  [ -n "$five_reset" ] && line3+="${D} ($(countdown "$five_reset"))${R}"
+  [ -n "$five_reset" ] && line3+="${D} ($(countdown "$five_reset"))${R}$(pace "$five_pct" "$five_reset" 18000)"
 fi
 if [ -n "$seven_pct" ]; then
   [ -n "$line3" ] && line3+="$SEP"
   line3+="${GREY}7d ${R}$(heat "$seven_pct")$(printf '%.0f' "$seven_pct")%${R}"
-  [ -n "$seven_reset" ] && line3+="${D} ($(countdown "$seven_reset"))${R}"
+  [ -n "$seven_reset" ] && line3+="${D} ($(countdown "$seven_reset"))${R}$(pace "$seven_pct" "$seven_reset" 604800)"
 fi
 if [ -n "$ctx_pct" ]; then
   [ -n "$line3" ] && line3+="$SEP"
