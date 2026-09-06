@@ -28,7 +28,7 @@ when a metric runs hot:
 ```
  ~/Projects/slrepo/src › ◇ fix-auth
  apurwa › ai-job-search › feature/auth* ↑2 Δ4 › PR #128 changes_requested
- 5h ███░░░░░ 43% (1h49m) ↓ › 7d 86% (3d5h) ↑ cap ~4h › ctx ██░░░░░░ 31%
+ 5h ███░░░░░ 43% (1h49m) ↓ › 7d ███████░ 86% (3d5h) ↑ cap ~4h › ctx ██░░░░░░ 31%
  Opus 5 › high › thinking › ~$35.11
 ```
 
@@ -41,7 +41,7 @@ Nerd Font to render.)
 |---|---|---|
 |  | project | full working-directory path (~ for home) › `◇` worktree |
 |  | repo | `username` › `repo` (+ pull-request icon & your open-PR count) › branch (`*` dirty, `↑n↓n` vs upstream, `Δn` vs default) › PR # + review state |
-|  | usage | 5-hour limit and context window (`ctx`) as progress bars, 7-day as %, all with reset countdowns and burn-rate pace (`↓`/`→`/`↑ cap ~Xh`). Amber at ≥60%, red at ≥80% |
+|  | usage | 5-hour limit, 7-day limit, and context window (`ctx`), each a progress bar with its percent, reset countdown, and burn-rate pace (`↓`/`→`/`↑ cap ~Xh`). Amber at ≥60%, red at ≥80% |
 |  | session | model › effort › thinking › estimated session cost |
 
 **Ghostty**

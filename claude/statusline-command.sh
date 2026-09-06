@@ -3,7 +3,7 @@
 #
 #    ~/full/path/to/cwd › ◇ worktree
 #    username › repo › branch* ↑n↓n Δn › PR #n
-#    5h ███░░░░░ 43% (2h10m) ↓ › 7d 86% (3d5h) ↑ cap ~4h › ctx ██░░░░░░ 31%
+#    5h ███░░░░░ 43% (2h10m) ↓ › 7d ███████░ 86% (3d5h) ↑ cap ~4h › ctx ██░░░░░░ 31%
 #    model › effort › thinking › ~$1.23
 #
 # The ↓ → ↑ after a limit is the burn-rate pace: ↓ under pace, → on pace,
@@ -337,10 +337,13 @@ if [ -n "$branch" ] || [ -n "$repo_name" ]; then
   rows+=("$line2")
 fi
 
-# ── Line 3: ▪ 5h (bar) › 7d (plain %) › ctx (bar) ─────────────────────────────
-# The 5h limit and the context window get bars — those two fill fastest and get
-# watched most, so a bar earns its space. The 7d window moves slowly, so a
-# percentage plus its reset countdown says enough without one.
+# ── Line 3: ▪ 5h (bar) › 7d (bar) › ctx (bar) ─────────────────────────────────
+# All three usage metrics get a bar so the line reads as one scannable set — the
+# eye compares fill levels at a glance instead of translating one bare number
+# against two bars. The 7d window moves slowly, but a bar is exactly what a slow
+# number lacks: an at-a-glance "how full is the tank", and 7d is the limit that
+# hurts most when it binds (locked out for days, not hours). Each keeps its reset
+# countdown and burn-rate pace.
 line3=""
 if [ -n "$five_pct" ]; then
   line3+="${GREY}5h ${R}$(bar "$five_pct") $(heat "$five_pct")$(printf '%.0f' "$five_pct")%${R}"
@@ -348,7 +351,7 @@ if [ -n "$five_pct" ]; then
 fi
 if [ -n "$seven_pct" ]; then
   [ -n "$line3" ] && line3+="$SEP"
-  line3+="${GREY}7d ${R}$(heat "$seven_pct")$(printf '%.0f' "$seven_pct")%${R}"
+  line3+="${GREY}7d ${R}$(bar "$seven_pct") $(heat "$seven_pct")$(printf '%.0f' "$seven_pct")%${R}"
   [ -n "$seven_reset" ] && line3+="${D} ($(countdown "$seven_reset"))${R}$(pace "$seven_pct" "$seven_reset" 604800)"
 fi
 if [ -n "$ctx_pct" ]; then
