@@ -371,11 +371,12 @@ if [ -n "$model" ] || [ -n "$effort" ] || [ -n "$cost" ]; then
   rows+=("$line4")
 fi
 
-# ── Emit: rows separated by a blank line for extra vertical spacing ────────────
-# A blank line between each populated row (no leading/trailing blank). If Claude
-# Code collapses the empty lines, change the spacer printf '\n' to printf ' \n'
-# (a single space) so the row is non-empty and always renders.
-for i in "${!rows[@]}"; do
-  [ "$i" -gt 0 ] && printf '\n'
-  printf '%s\n' "${rows[$i]}"
+# ── Emit: one row per line, no blank spacers ──────────────────────────────────
+# Each populated row on its own line — four lines, not seven. The earlier version
+# put a blank line between rows for vertical spacing, but blank rows count against
+# the status line's visible height, so the lower rows (usage, session) got pushed
+# off and never showed. Compact output keeps all four rows visible; if a row is
+# skipped it simply leaves no gap.
+for row in "${rows[@]}"; do
+  printf '%s\n' "$row"
 done
