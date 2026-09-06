@@ -4,10 +4,15 @@
 #    ~/full/path/to/cwd › ◇ worktree
 #    username › repo › branch* ↑n↓n Δn › PR #n
 #    5h ███░░░░░ 43% (2h10m) ↓ › 7d ███████░ 86% (3d5h) ↑ cap ~4h › ctx ██░░░░░░ 31%
+#    codex 5h ██████░░ 72% (4h47m) → › 7d █████░░░ 59% (2d6h) ↓   (opt-in, see below)
 #    model › effort › thinking › ~$1.23
 #
 # The ↓ → ↑ after a limit is the burn-rate pace: ↓ under pace, → on pace,
 # ↑ over pace with "cap ~<Xh>" — the ETA to 100% if the current rate holds.
+#
+# The "codex" row is optional (set STATUSLINE_CODEX=1). Codex has no scriptable
+# status line, but it logs its own 5h/weekly rate limits to ~/.codex, so this
+# reads them and shows both agents' usage in one place. See codex_usage() below.
 #
 # Field names come from the payload schema documented inside the Claude Code
 # binary (v2.1.236). Note there is no daily or monthly limit in the payload —
@@ -223,6 +228,52 @@ pr_open() {
   printf '%s' "$n"
 }
 
+# Codex (OpenAI) usage, shown alongside Claude's when STATUSLINE_CODEX is set.
+# Codex has no scriptable status line of its own, but it records rate limits into
+# its session rollouts (~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl) on every
+# turn, in token_count events: payload.rate_limits.primary is the 5-hour window
+# (window_minutes 300) and .secondary is the weekly one (10080), each with the
+# same used_percent + resets_at(epoch) shape as Claude's rate_limits — so bar(),
+# heat(), countdown() and pace() all apply unchanged. Like pr_open this NEVER
+# blocks: it prints from a cache and refreshes in the background by reading the
+# most recent rollout that carries a rate_limits record. The figure reflects your
+# LAST Codex turn, so it can lag if you haven't run Codex recently; the reset
+# countdown still shows where the window stands. Prints raw "p5 r5 p7 r7" to the
+# cache; formatting happens per-render so the countdown/pace stay live.
+codex_usage() {
+  case "${STATUSLINE_CODEX:-}" in ''|0|no|off|false) return ;; esac
+  [ -d "$HOME/.codex/sessions" ] || return
+  command -v jq >/dev/null 2>&1 || return
+  local cache="$HOME/.claude/cache/statusline/codex-usage" now age p5 r5 p7 r7 seg
+  mkdir -p "$(dirname "$cache")" 2>/dev/null || return
+  now=$(date +%s); age=99999
+  [ -f "$cache" ] && age=$(( now - $(stat -f%m "$cache" 2>/dev/null || echo 0) ))
+  if [ "$age" -ge 45 ]; then
+    ( cand=""
+      # newest rollout (by mtime) that actually carries a rate_limits record;
+      # find+stat avoids an ls glob blowing up on a large session history.
+      for f in $(find "$HOME/.codex/sessions" -type f -name 'rollout-*.jsonl' \
+                   -exec stat -f '%m %N' {} + 2>/dev/null | sort -rn | head -8 | cut -d' ' -f2-); do
+        grep -q '"rate_limits":{' "$f" 2>/dev/null && { cand="$f"; break; }
+      done
+      [ -n "$cand" ] || exit 0
+      line=$(grep '"rate_limits":{' "$cand" 2>/dev/null | tail -1)
+      [ -n "$line" ] || exit 0
+      printf '%s' "$line" | jq -r '.payload.rate_limits
+        | "\(.primary.used_percent // "") \(.primary.resets_at // "") \(.secondary.used_percent // "") \(.secondary.resets_at // "")"' \
+        2>/dev/null > "$cache.tmp" && mv "$cache.tmp" "$cache" ) &
+  fi
+  read -r p5 r5 p7 r7 < "$cache" 2>/dev/null || return
+  case "$p5" in ''|*[!0-9.]*) return ;; esac
+  seg="${GREY}5h ${R}$(bar "$p5") $(heat "$p5")$(printf '%.0f' "$p5")%${R}"
+  [ -n "$r5" ] && seg+="${D} ($(countdown "$r5"))${R}$(pace "$p5" "$r5" 18000)"
+  if [ -n "$p7" ]; then
+    seg+="$SEP${GREY}7d ${R}$(bar "$p7") $(heat "$p7")$(printf '%.0f' "$p7")%${R}"
+    [ -n "$r7" ] && seg+="${D} ($(countdown "$r7"))${R}$(pace "$p7" "$r7" 604800)"
+  fi
+  printf '%s' "$seg"
+}
+
 # Session cost. Claude Code does not put cost in the status line payload, so it
 # is summed from the transcript's per-response usage records and priced with the
 # table below. Cache tiers are billed differently and the transcript breaks them
@@ -378,6 +429,11 @@ if [ -n "$ctx_pct" ]; then
   line3+="${GREY}ctx ${R}$(bar "$ctx_pct") ${c}$(printf '%.0f' "$ctx_pct")%${R}"
 fi
 [ -n "$line3" ] && rows+=("${MAROON_DK}${ICON_LIMITS} ${R}${line3}")
+
+# Optional Codex usage row, directly under Claude's, labelled so the two agents
+# are unmistakable. Off unless STATUSLINE_CODEX is set. See codex_usage() above.
+cx=$(codex_usage)
+[ -n "$cx" ] && rows+=("${MAROON_DK}${ICON_LIMITS} ${R}${GREY}codex ${R}${cx}")
 
 # ── Line 4: ▫ model › effort › thinking › cost ────────────────────────────────
 cost=$(session_cost "$transcript" "$session_id")

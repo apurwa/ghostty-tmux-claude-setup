@@ -88,6 +88,28 @@ your own by dropping a four-colour case into the palette block near the top of
 `statusline-command.sh` — a calm primary, the warn and alarm heat tones, and the
 empty-bar track.
 
+**Both agents at once (Codex)** — if you also use [OpenAI's Codex
+CLI](https://github.com/openai/codex), set `STATUSLINE_CODEX=1` and a second
+usage row appears under Claude's, showing Codex's own 5-hour and weekly limits
+with the same bars, heat, countdowns, and pace:
+
+```
+ 5h ███░░░░░ 43% (1h49m) ↓ › 7d ███████░ 86% (3d5h) ↑ cap ~4h › ctx ██░░░░░░ 31%
+ codex 5h ██████░░ 72% (4h47m) → › 7d █████░░░ 59% (2d6h) ↓
+```
+
+Codex has no scriptable status line of its own, but it records its rate limits to
+`~/.codex/sessions/**/rollout-*.jsonl` on every turn, so this reads the most
+recent one — no network call, and it never blocks a render (cached, refreshed in
+the background). The figure reflects your last Codex turn, so it can lag if you
+haven't run Codex in a while; the reset countdown still shows where the window
+stands. Enable it in your `statusLine` command, next to a theme if you like:
+
+```json
+{ "statusLine": { "type": "command",
+    "command": "STATUSLINE_CODEX=1 bash ~/.claude/statusline-command.sh" } }
+```
+
 **Ghostty**
 - **Shift+Enter inserts a newline** in Claude Code (and other TUIs) instead of
   submitting — sends `ESC`+`Enter`, which passes cleanly through tmux.
