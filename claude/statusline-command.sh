@@ -3,7 +3,7 @@
 #
 #    ~/full/path/to/cwd › ◇ worktree
 #    username › repo › branch* ↑n↓n Δn › PR #n
-#    5h 43% (2h10m) ↓ › 7d 86% (3d5h) ↑ cap ~4h › ██░░░░░░ 31%
+#    5h ███░░░░░ 43% (2h10m) ↓ › 7d 86% (3d5h) ↑ cap ~4h › ctx ██░░░░░░ 31%
 #    model › effort › thinking › ~$1.23
 #
 # The ↓ → ↑ after a limit is the burn-rate pace: ↓ under pace, → on pace,
@@ -337,12 +337,13 @@ if [ -n "$branch" ] || [ -n "$repo_name" ]; then
   rows+=("$line2")
 fi
 
-# ── Line 3: ▪ limits (plain %) › context (bar) ────────────────────────────────
-# Only the context window gets a bar. The 5h/7d windows move slowly and a
-# percentage plus a reset countdown says everything a bar would.
+# ── Line 3: ▪ 5h (bar) › 7d (plain %) › ctx (bar) ─────────────────────────────
+# The 5h limit and the context window get bars — those two fill fastest and get
+# watched most, so a bar earns its space. The 7d window moves slowly, so a
+# percentage plus its reset countdown says enough without one.
 line3=""
 if [ -n "$five_pct" ]; then
-  line3+="${GREY}5h ${R}$(heat "$five_pct")$(printf '%.0f' "$five_pct")%${R}"
+  line3+="${GREY}5h ${R}$(bar "$five_pct") $(heat "$five_pct")$(printf '%.0f' "$five_pct")%${R}"
   [ -n "$five_reset" ] && line3+="${D} ($(countdown "$five_reset"))${R}$(pace "$five_pct" "$five_reset" 18000)"
 fi
 if [ -n "$seven_pct" ]; then
@@ -352,10 +353,10 @@ if [ -n "$seven_pct" ]; then
 fi
 if [ -n "$ctx_pct" ]; then
   [ -n "$line3" ] && line3+="$SEP"
-  # Bar plus the exact figure, no "ctx" label. The bar is 8 cells and so
-  # resolves only to ~12% steps; the number carries the precision.
+  # "ctx" label, bar, then the exact figure. The bar is 8 cells and so resolves
+  # only to ~12% steps; the number carries the precision.
   c=$(heat "$ctx_pct")
-  line3+="$(bar "$ctx_pct") ${c}$(printf '%.0f' "$ctx_pct")%${R}"
+  line3+="${GREY}ctx ${R}$(bar "$ctx_pct") ${c}$(printf '%.0f' "$ctx_pct")%${R}"
 fi
 [ -n "$line3" ] && rows+=("${MAROON_DK}${ICON_LIMITS} ${R}${line3}")
 
