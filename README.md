@@ -1,9 +1,19 @@
 # Ghostty + tmux + Claude Code setup
 
-A reproducible terminal setup: [Ghostty](https://ghostty.org) as the terminal,
-[tmux](https://github.com/tmux/tmux) for panes and sessions, and a custom
-[Claude Code](https://claude.com/claude-code) status line. Gruvbox Light theme,
-everything in maroon (`#9d0006`).
+<p align="center">
+  <img src="docs/statusline.png" alt="Claude Code status line: working directory; owner / repo / branch / PR; 5-hour, 7-day and context-window usage bars with reset countdowns and burn-rate pace; model, effort, thinking and cost" width="760">
+</p>
+
+A four-line [Claude Code](https://claude.com/claude-code) **status line**: your
+5-hour, 7-day and context-window usage as live bars, each with a reset countdown
+and a **burn-rate pace** (`↓` under pace, `→` on pace, `↑ cap ~Xh` when you're on
+track to hit the limit before it resets), your **open-PR count**, and
+**alarm-only heat** so the line stays calm maroon and only turns amber, then red,
+as a metric runs hot. Bundled with the [Ghostty](https://ghostty.org) +
+[tmux](https://github.com/tmux/tmux) setup it was built for: Shift+Enter for a
+newline inside Claude Code, and a right-click pane menu that works even in it.
+
+Gruvbox Light theme, everything in maroon (`#9d0006`).
 
 One command on a fresh machine:
 
@@ -138,3 +148,9 @@ glyphs between alignment pipes so you can spot any that render double-width.
 Every file the installer touched has a `.bak-<timestamp>` beside it. Restore the
 most recent, or just delete the four installed files and remove the `statusLine`
 block from `~/.claude/settings.json`.
+
+---
+
+## License
+
+[MIT](LICENSE) — use it, fork it, retune the palette.
