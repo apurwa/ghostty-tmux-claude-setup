@@ -25,6 +25,13 @@ cd ghostty-tmux-claude-setup
 
 Then reload Ghostty (`Cmd+Shift+,`) and open a fresh tmux window. That's it.
 
+Want just the status line, without the Ghostty and tmux configs?
+
+```bash
+./install.sh --statusline-only                 # status line + settings only
+./install.sh --statusline-only --theme nord    # ...in a different theme
+```
+
 The installer is idempotent and backs up anything it replaces to
 `<file>.bak-<timestamp>`, so it is safe to re-run and easy to undo.
 
@@ -53,6 +60,33 @@ Nerd Font to render.)
 |  | repo | `username` › `repo` (+ pull-request icon & your open-PR count) › branch (`*` dirty, `↑n↓n` vs upstream, `Δn` vs default) › PR # + review state |
 |  | usage | 5-hour limit, 7-day limit, and context window (`ctx`), each a progress bar with its percent, reset countdown, and burn-rate pace (`↓`/`→`/`↑ cap ~Xh`). Amber at ≥60%, red at ≥80% |
 |  | session | model › effort › thinking › estimated session cost |
+
+**Themes** — the status line ships in five palettes. `gruvbox-light` is the
+default; the rest keep the same alarm-only heat ramp (calm → amber → red) tuned
+to each palette.
+
+<p align="center">
+  <img src="docs/themes.png" alt="The usage line rendered in five themes: gruvbox-light, gruvbox-dark, catppuccin, tokyonight, and nord, each on its own background with amber warn and red alarm heat" width="820">
+</p>
+
+Pick one with the `STATUSLINE_THEME` environment variable. Either let the
+installer set it:
+
+```bash
+./install.sh --theme catppuccin
+```
+
+or set it yourself in `~/.claude/settings.json`:
+
+```json
+{ "statusLine": { "type": "command",
+    "command": "STATUSLINE_THEME=tokyonight bash ~/.claude/statusline-command.sh" } }
+```
+
+Themes: `gruvbox-light`, `gruvbox-dark`, `catppuccin`, `tokyonight`, `nord`. Add
+your own by dropping a four-colour case into the palette block near the top of
+`statusline-command.sh` — a calm primary, the warn and alarm heat tones, and the
+empty-bar track.
 
 **Ghostty**
 - **Shift+Enter inserts a newline** in Claude Code (and other TUIs) instead of
@@ -134,9 +168,12 @@ A few choices that aren't obvious, recorded so future-you doesn't re-derive them
   the `RATES` in `session_cost()` if prices change. A resumed session only counts
   what its current transcript holds. Shown with a `~` for that reason.
 
-- **The palette is tuned for a light background.** If you switch Ghostty to a
-  dark theme, the maroon may look muddy — retune the colours near the top of
-  `statusline-command.sh`.
+- **Each theme is only four colours.** The whole line is one calm colour; heat is
+  the only thing that ever changes it, and only above 60%. So a palette is just a
+  calm primary, a warn tone, an alarm tone, and the empty-bar track — which is why
+  a new theme is a one-line `case` near the top of `statusline-command.sh`. Light
+  themes carry a coloured primary (the signature look); dark themes use the
+  theme's foreground as the calm colour, which reads better on a dark background.
 
 Run `~/.claude/glyph-test.sh` if you swap in a new icon; it prints candidate
 glyphs between alignment pipes so you can spot any that render double-width.

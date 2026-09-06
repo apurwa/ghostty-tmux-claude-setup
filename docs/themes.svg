@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 932 316" width="932" height="316" font-family="'SF Mono','Cascadia Code','JetBrains Mono',Menlo,Consolas,monospace" text-rendering="geometricPrecision">
+  <!-- Each row is the usage line (line 3) on that theme's real background, so the
+       calm colour and the amber/red heat are shown exactly as they render. -->
+
+  <!-- gruvbox-light : bg #fbf1c7 text #9d0006 warn #b57614 alarm #cc241d empty #e2a9ad -->
+  <rect x="16" y="16" width="900" height="52" rx="9" fill="#fbf1c7" stroke="#e8dca0"/>
+  <text x="34" y="47" font-size="12" fill="#9d0006" font-weight="bold">gruvbox-light</text>
+  <text x="150" y="47" font-size="13.5" font-weight="bold" xml:space="preserve"><tspan fill="#9d0006"> 5h </tspan><tspan fill="#b57614">██████</tspan><tspan fill="#e2a9ad">░░</tspan><tspan fill="#b57614"> 72%</tspan><tspan fill="#9d0006"> (1h49m) → › 7d </tspan><tspan fill="#cc241d">███████</tspan><tspan fill="#e2a9ad">░</tspan><tspan fill="#cc241d"> 86%</tspan><tspan fill="#9d0006"> (3d5h) </tspan><tspan fill="#cc241d">↑ cap ~9h</tspan><tspan fill="#9d0006"> › ctx </tspan><tspan fill="#9d0006">██</tspan><tspan fill="#e2a9ad">░░░░░░</tspan><tspan fill="#9d0006"> 31%</tspan></text>
+
+  <!-- gruvbox-dark : bg #282828 text #ebdbb2 warn #fabd2f alarm #fb4934 empty #665c54 -->
+  <rect x="16" y="76" width="900" height="52" rx="9" fill="#282828"/>
+  <text x="34" y="107" font-size="12" fill="#ebdbb2" font-weight="bold">gruvbox-dark</text>
+  <text x="150" y="107" font-size="13.5" font-weight="bold" xml:space="preserve"><tspan fill="#ebdbb2"> 5h </tspan><tspan fill="#fabd2f">██████</tspan><tspan fill="#665c54">░░</tspan><tspan fill="#fabd2f"> 72%</tspan><tspan fill="#ebdbb2"> (1h49m) → › 7d </tspan><tspan fill="#fb4934">███████</tspan><tspan fill="#665c54">░</tspan><tspan fill="#fb4934"> 86%</tspan><tspan fill="#ebdbb2"> (3d5h) </tspan><tspan fill="#fb4934">↑ cap ~9h</tspan><tspan fill="#ebdbb2"> › ctx </tspan><tspan fill="#ebdbb2">██</tspan><tspan fill="#665c54">░░░░░░</tspan><tspan fill="#ebdbb2"> 31%</tspan></text>
+
+  <!-- catppuccin mocha : bg #1e1e2e text #cdd6f4 warn #f9e2af alarm #f38ba8 empty #45475a -->
+  <rect x="16" y="136" width="900" height="52" rx="9" fill="#1e1e2e"/>
+  <text x="34" y="167" font-size="12" fill="#cdd6f4" font-weight="bold">catppuccin</text>
+  <text x="150" y="167" font-size="13.5" font-weight="bold" xml:space="preserve"><tspan fill="#cdd6f4"> 5h </tspan><tspan fill="#f9e2af">██████</tspan><tspan fill="#45475a">░░</tspan><tspan fill="#f9e2af"> 72%</tspan><tspan fill="#cdd6f4"> (1h49m) → › 7d </tspan><tspan fill="#f38ba8">███████</tspan><tspan fill="#45475a">░</tspan><tspan fill="#f38ba8"> 86%</tspan><tspan fill="#cdd6f4"> (3d5h) </tspan><tspan fill="#f38ba8">↑ cap ~9h</tspan><tspan fill="#cdd6f4"> › ctx </tspan><tspan fill="#cdd6f4">██</tspan><tspan fill="#45475a">░░░░░░</tspan><tspan fill="#cdd6f4"> 31%</tspan></text>
+
+  <!-- tokyonight night : bg #1a1b26 text #c0caf5 warn #e0af68 alarm #f7768e empty #414868 -->
+  <rect x="16" y="196" width="900" height="52" rx="9" fill="#1a1b26"/>
+  <text x="34" y="227" font-size="12" fill="#c0caf5" font-weight="bold">tokyonight</text>
+  <text x="150" y="227" font-size="13.5" font-weight="bold" xml:space="preserve"><tspan fill="#c0caf5"> 5h </tspan><tspan fill="#e0af68">██████</tspan><tspan fill="#414868">░░</tspan><tspan fill="#e0af68"> 72%</tspan><tspan fill="#c0caf5"> (1h49m) → › 7d </tspan><tspan fill="#f7768e">███████</tspan><tspan fill="#414868">░</tspan><tspan fill="#f7768e"> 86%</tspan><tspan fill="#c0caf5"> (3d5h) </tspan><tspan fill="#f7768e">↑ cap ~9h</tspan><tspan fill="#c0caf5"> › ctx </tspan><tspan fill="#c0caf5">██</tspan><tspan fill="#414868">░░░░░░</tspan><tspan fill="#c0caf5"> 31%</tspan></text>
+
+  <!-- nord : bg #2e3440 text #d8dee9 warn #ebcb8b alarm #bf616a empty #4c566a -->
+  <rect x="16" y="256" width="900" height="52" rx="9" fill="#2e3440"/>
+  <text x="34" y="287" font-size="12" fill="#d8dee9" font-weight="bold">nord</text>
+  <text x="150" y="287" font-size="13.5" font-weight="bold" xml:space="preserve"><tspan fill="#d8dee9"> 5h </tspan><tspan fill="#ebcb8b">██████</tspan><tspan fill="#4c566a">░░</tspan><tspan fill="#ebcb8b"> 72%</tspan><tspan fill="#d8dee9"> (1h49m) → › 7d </tspan><tspan fill="#bf616a">███████</tspan><tspan fill="#4c566a">░</tspan><tspan fill="#bf616a"> 86%</tspan><tspan fill="#d8dee9"> (3d5h) </tspan><tspan fill="#bf616a">↑ cap ~9h</tspan><tspan fill="#d8dee9"> › ctx </tspan><tspan fill="#d8dee9">██</tspan><tspan fill="#4c566a">░░░░░░</tspan><tspan fill="#d8dee9"> 31%</tspan></text>
+</svg>

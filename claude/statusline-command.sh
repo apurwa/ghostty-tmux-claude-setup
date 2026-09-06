@@ -53,40 +53,56 @@ eval "$(printf '%s' "$input" | jq -r '
   @sh "transcript=\(.transcript_path // "")"
 ' 2>/dev/null)"
 
-# ── maroon palette on the gruvbox light background (#fbf1c7), alarm-only heat ──
-# Every glyph is #9d0006 — gruvbox's faded red — EXCEPT the heat colours (HEAT_*
-# below), used ONLY by the 5h/7d/ctx percentages, the bar fill, and the over-pace
-# ↑. Everything else — the dirty *, the ↑↓ track, PR states — stays maroon, so
-# the line reads calm almost always and only lights up when a metric runs hot:
-#   <60%  calm  → HEAT_CALM  = the same maroon (no visible change)
-#   60-79 warn  → HEAT_WARN  = gruvbox amber  #b57614
-#   >=80  alarm → HEAT_ALARM = gruvbox bright red #cc241d
-# To go fully flat again, point the HEAT_* colours back at $TEXT.
+# ── palette: one calm colour + alarm-only heat, themeable ─────────────────────
+# The whole line is a single calm colour (gruvbox-light's faded maroon by
+# default) EXCEPT the heat tones, used ONLY by the 5h/7d/ctx percentages, the bar
+# fill, and the over-pace ↑. Everything else — the dirty *, the ↑↓ track, PR
+# states — stays the calm colour, so the line reads flat almost always and only
+# lights up when a metric runs hot:
+#   <60%  calm  → HEAT_CALM  = the calm colour (no visible change)
+#   60-79 warn  → HEAT_WARN  = the theme's amber/yellow
+#   >=80  alarm → HEAT_ALARM = the theme's bright red
+#
+# Pick a palette with STATUSLINE_THEME (default gruvbox-light). Each theme is four
+# colours as "R;G;B": the calm primary (every glyph until a metric runs hot), the
+# warn and alarm heat tones, and the empty-bar track. Light themes carry a
+# coloured primary (the signature look); dark themes use the theme's foreground as
+# the calm colour with yellow→red heat, which is what those palettes expect. Add a
+# theme by adding a case; to go fully flat, set warn/alarm equal to the primary.
+case "${STATUSLINE_THEME:-gruvbox-light}" in
+  gruvbox-dark) c_text='235;219;178'; c_warn='250;189;47';  c_alarm='251;73;52';  c_empty='102;92;84'   ;; # bg #282828
+  catppuccin)   c_text='205;214;244'; c_warn='249;226;175'; c_alarm='243;139;168'; c_empty='69;71;90'   ;; # mocha, bg #1e1e2e
+  tokyonight)   c_text='192;202;245'; c_warn='224;175;104'; c_alarm='247;118;142'; c_empty='65;72;104'  ;; # night, bg #1a1b26
+  nord)         c_text='216;222;233'; c_warn='235;203;139'; c_alarm='191;97;106';  c_empty='76;86;106'  ;; # bg #2e3440
+  gruvbox-light|*) c_text='157;0;6'; c_warn='181;118;20'; c_alarm='204;36;29';   c_empty='226;169;173' ;; # bg #fbf1c7 (default)
+esac
 #
 # Careful with the comments below: `VAR=$'...'# text` with no space folds the
 # '#' into the value and prints a stray '#' in the status line.
 R=$'\033[0m'
 # SGR 1 (bold) plus the colour, in one sequence. Bold also helps the text hold
-# up against the dimming Claude Code applies to the status line.
-TEXT=$'\033[1;38;2;157;0;6m'     # #9d0006 bold — every glyph of text
+# up against the dimming Claude Code applies to the status line. $'...' does not
+# expand variables, so each colour is the ANSI-C-quoted prefix concatenated with
+# the expanded "R;G;B" and a literal 'm'.
+TEXT=$'\033[1;38;2;'"$c_text"'m'   # calm — every glyph of text
 D="$TEXT"                        # separators, countdowns
 GREY="$TEXT"                     # labels: 5h / 7d / ctx / model
 MAROON="$TEXT"                   # primary identity
 MAROON_LT="$TEXT"                # secondary — subdir, branch
 MAROON_DK="$TEXT"                # bullets, worktree
-GREEN="$TEXT"                    # ahead ↑, PR approved — kept maroon (flat)
-YELLOW="$TEXT"                   # dirty *, PR pending — kept maroon (flat)
-RED="$TEXT"                      # behind ↓, PR changes-requested — kept maroon (flat)
+GREEN="$TEXT"                    # ahead ↑, PR approved — kept calm (flat)
+YELLOW="$TEXT"                   # dirty *, PR pending — kept calm (flat)
+RED="$TEXT"                      # behind ↓, PR changes-requested — kept calm (flat)
 # Heat has its own colours so ONLY the climbing metrics (5h/7d/ctx % and the bar)
-# and the over-pace ↑ ever leave maroon; the dirty *, ↑↓ track and PR states
-# above stay calm. calm <60 / warn 60-79 / alarm >=80.
-HEAT_CALM="$TEXT"                       # <60% — same maroon, no visible change
-HEAT_WARN=$'\033[1;38;2;181;118;20m'   # 60-79% — gruvbox amber #b57614
-HEAT_ALARM=$'\033[1;38;2;204;36;29m'   # >=80% — gruvbox bright red #cc241d
+# and the over-pace ↑ ever leave the calm colour; the dirty *, ↑↓ track and PR
+# states above stay calm. calm <60 / warn 60-79 / alarm >=80.
+HEAT_CALM="$TEXT"                        # <60% — the calm colour, no visible change
+HEAT_WARN=$'\033[1;38;2;'"$c_warn"'m'    # 60-79% — theme amber/yellow
+HEAT_ALARM=$'\033[1;38;2;'"$c_alarm"'m'  # >=80% — theme bright red
 BLUE="$TEXT"                     # cost
-# Not text — the empty track of the bar. Kept as a light tint of the same hue so
-# the bar still reads as a bar; at #9d0006 it would be a solid indistinct block.
-BAR_EMPTY=$'\033[38;2;226;169;173m' # #e2a9ad
+# Not text — the empty track of the bar. A muted theme tint so the bar still
+# reads as a bar; at the primary colour it would be a solid indistinct block.
+BAR_EMPTY=$'\033[38;2;'"$c_empty"'m'
 SEP="${D} › ${R}"
 
 BAR_W=8

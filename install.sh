@@ -3,20 +3,45 @@
 # in README.md. Idempotent: safe to re-run. Backs up anything it would replace
 # to <file>.bak-<timestamp>. Nothing here is destructive without a backup.
 #
-#   ./install.sh          apply everything
-#   ./install.sh --link   symlink the repo's files instead of copying, so a
-#                         future `git pull` updates the live config in place
+#   ./install.sh                       apply everything
+#   ./install.sh --statusline-only     just the Claude Code status line + settings
+#                                      (skip the Ghostty and tmux configs)
+#   ./install.sh --theme <name>        set the status line theme (default is
+#                                      gruvbox-light). One of: gruvbox-light,
+#                                      gruvbox-dark, catppuccin, tokyonight, nord
+#   ./install.sh --link                symlink the repo's files instead of
+#                                      copying, so a future `git pull` updates
+#                                      the live config in place
+#
+# Flags combine, e.g. ./install.sh --statusline-only --theme nord --link
 #
 # macOS-oriented (Homebrew, Ghostty.app). On Linux, install jq + a Nerd Font
-# with your package manager and copy the three config files by hand; the tmux
-# and status line pieces work unchanged.
+# with your package manager and copy the config files by hand; the tmux and
+# status line pieces work unchanged.
 set -u
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LINK=0; [ "${1:-}" = "--link" ] && LINK=1
 STAMP="$(date +%Y%m%d-%H%M%S)"
+LINK=0; STATUSLINE_ONLY=0; THEME=""
+VALID_THEMES="gruvbox-light gruvbox-dark catppuccin tokyonight nord"
 say()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m  ! \033[0m%s\n' "$*"; }
+die()  { printf '\033[1;31m  ✗ \033[0m%s\n' "$*" >&2; exit 1; }
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --link)             LINK=1 ;;
+    --statusline-only)  STATUSLINE_ONLY=1 ;;
+    --theme)            THEME="${2:-}"; shift ;;
+    --theme=*)          THEME="${1#--theme=}" ;;
+    -h|--help)          sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *)                  die "unknown option: $1 (try --help)" ;;
+  esac
+  shift
+done
+if [ -n "$THEME" ]; then
+  case " $VALID_THEMES " in *" $THEME "*) : ;; *) die "unknown theme: $THEME (one of: $VALID_THEMES)";; esac
+fi
 
 # place <src-in-repo> <dest> — back up an existing dest, then copy or symlink.
 place() {
@@ -44,8 +69,12 @@ else
 fi
 
 # ── 2. config files ───────────────────────────────────────────────────────────
-place "$REPO/ghostty/config"            "$HOME/.config/ghostty/config"
-place "$REPO/tmux/tmux.conf"            "$HOME/.tmux.conf"
+if [ "$STATUSLINE_ONLY" = 0 ]; then
+  place "$REPO/ghostty/config"            "$HOME/.config/ghostty/config"
+  place "$REPO/tmux/tmux.conf"            "$HOME/.tmux.conf"
+else
+  say "statusline-only — skipping the Ghostty and tmux configs"
+fi
 place "$REPO/claude/statusline-command.sh" "$HOME/.claude/statusline-command.sh"
 place "$REPO/claude/glyph-test.sh"      "$HOME/.claude/glyph-test.sh"
 chmod +x "$HOME/.claude/statusline-command.sh" "$HOME/.claude/glyph-test.sh" 2>/dev/null
@@ -58,8 +87,20 @@ if command -v jq >/dev/null 2>&1; then
   [ -f "$SET" ] || echo '{}' > "$SET"
   cp "$SET" "$SET.bak-$STAMP"
   if jq -e . "$SET" >/dev/null 2>&1; then
-    jq --slurpfile s "$REPO/claude/settings.snippet.json" '. * $s[0]' "$SET" > "$SET.tmp" \
-      && mv "$SET.tmp" "$SET" && say "merged statusLine into $SET (backup: $SET.bak-$STAMP)"
+    # --statusline-only merges only the statusLine key (leaves your theme alone);
+    # a full install also sets theme:"light" so Claude Code's UI text stays
+    # legible on the cream background.
+    if [ "$STATUSLINE_ONLY" = 1 ]; then
+      jq --slurpfile s "$REPO/claude/settings.snippet.json" '.statusLine = $s[0].statusLine' "$SET" > "$SET.tmp"
+    else
+      jq --slurpfile s "$REPO/claude/settings.snippet.json" '. * $s[0]' "$SET" > "$SET.tmp"
+    fi
+    mv "$SET.tmp" "$SET" && say "merged statusLine into $SET (backup: $SET.bak-$STAMP)"
+    # Bake the chosen theme into the command as an env prefix the script reads.
+    if [ -n "$THEME" ]; then
+      jq --arg t "$THEME" '.statusLine.command = "STATUSLINE_THEME=" + $t + " bash ~/.claude/statusline-command.sh"' \
+        "$SET" > "$SET.tmp" && mv "$SET.tmp" "$SET" && say "status line theme: $THEME"
+    fi
   else
     warn "$SET is not valid JSON — add the statusLine block from claude/settings.snippet.json by hand."
   fi
@@ -68,9 +109,17 @@ else
 fi
 
 # ── 4. reload what is already running ──────────────────────────────────────────
-[ -n "${TMUX:-}" ] && tmux source-file "$HOME/.tmux.conf" 2>/dev/null && say "reloaded tmux"
+[ "$STATUSLINE_ONLY" = 0 ] && [ -n "${TMUX:-}" ] && tmux source-file "$HOME/.tmux.conf" 2>/dev/null && say "reloaded tmux"
 
-cat <<'DONE'
+if [ "$STATUSLINE_ONLY" = 1 ]; then
+  cat <<'DONE'
+
+Done. The status line is live and re-renders on its own — no restart needed.
+Change the theme any time by re-running with --theme <name>, or by editing the
+statusLine command in ~/.claude/settings.json.
+DONE
+else
+  cat <<'DONE'
 
 Done. Two things the running programs can't pick up on their own:
   • Ghostty  — reload config with Cmd+Shift+, (or restart the app) for the
@@ -80,3 +129,4 @@ Done. Two things the running programs can't pick up on their own:
 
 The status line and the right-click pane menu are already live.
 DONE
+fi
