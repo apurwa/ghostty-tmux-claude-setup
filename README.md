@@ -1,7 +1,7 @@
 # Ghostty + tmux + Claude Code setup
 
 <p align="center">
-  <img src="docs/statusline.png" alt="Claude Code status line: working directory; owner / repo / branch / PR; 5-hour, 7-day and context-window usage bars with reset countdowns and burn-rate pace; model, effort, thinking and cost" width="760">
+  <img src="docs/statusline-demo.gif" alt="The status line over a session: 5-hour, 7-day and context-window usage bars fill up, each with a reset countdown and a burn-rate pace arrow, and the line turns from calm maroon to amber to red as the limits run hot; the estimated cost ticks up" width="760">
 </p>
 
 A four-line [Claude Code](https://claude.com/claude-code) **status line**: your
